@@ -77,15 +77,17 @@ public class FinanceService
 
     public async Task<decimal> GetTotalBalanceAsync()
     {
-        var initialBalances = await _context.Accounts.SumAsync(a => a.InitialBalance);
+        var initialBalances = (await _context.Accounts.Select(a => a.InitialBalance).ToListAsync()).Sum();
 
-        var income = await _context.Transactions
+        var income = (await _context.Transactions
             .Where(t => t.Type == TransactionType.Income)
-            .SumAsync(t => t.Amount);
+            .Select(t => t.Amount)
+            .ToListAsync()).Sum();
         
-        var expense = await _context.Transactions
+        var expense = (await _context.Transactions
             .Where(t => t.Type == TransactionType.Expense)
-            .SumAsync(t => t.Amount);
+            .Select(t => t.Amount)
+            .ToListAsync()).Sum();
 
         return initialBalances + income - expense;
     }
@@ -100,15 +102,17 @@ public class FinanceService
         var account = await _context.Accounts.FindAsync(accountId);
         if (account == null) return 0;
 
-        var income = await _context.Transactions
+        var income = (await _context.Transactions
             .Where(t => (t.AccountId == accountId && t.Type == TransactionType.Income) || 
                         (t.ToAccountId == accountId && t.Type == TransactionType.Transfer))
-            .SumAsync(t => t.Amount);
+            .Select(t => t.Amount)
+            .ToListAsync()).Sum();
 
-        var expense = await _context.Transactions
+        var expense = (await _context.Transactions
             .Where(t => (t.AccountId == accountId && t.Type == TransactionType.Expense) || 
                         (t.AccountId == accountId && t.Type == TransactionType.Transfer))
-            .SumAsync(t => t.Amount);
+            .Select(t => t.Amount)
+            .ToListAsync()).Sum();
 
         return account.InitialBalance + income - expense;
     }
