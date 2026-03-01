@@ -5,10 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🔥 IMPORTANT FOR RENDER
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://*:{port}");
-
 // Add services
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -29,8 +25,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStatusCodePagesWithReExecute("/not-found");
 
-// ❌ REMOVE THIS FOR RENDER
-// app.UseHttpsRedirection();
+// ❌ Do NOT use HTTPS redirect on Render
+// Render already provides HTTPS
 
 app.UseAntiforgery();
 app.UseStaticFiles();
