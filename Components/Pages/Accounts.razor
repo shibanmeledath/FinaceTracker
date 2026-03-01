@@ -1,0 +1,135 @@
+@page "/accounts"
+@using FinanceTracker.Models
+@using FinanceTracker.Services
+@inject FinanceService FinanceService
+
+<PageTitle>Accounts - FinanceTracker</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Accounts</h1>
+    <button class="btn-primary" @onclick="() => ShowAddModal = true">Add Account</button>
+</div>
+
+@if (AccountList == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var account in AccountList)
+        {
+            <div class="col-md-4">
+                <div class="glass-card h-100 position-relative">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="account-icon" style="background: @account.Color">
+                            @account.Icon
+                        </div>
+                        <div>
+                            <h4 class="mb-0">@account.Name</h4>
+                        </div>
+                    </div>
+                    <div class="stat-value mb-2">@Balances[account.Id].ToString("C")</div>
+                    <div class="text-muted small">ID: @account.Id</div>
+                    
+                    <button class="btn btn-outline-danger btn-sm position-absolute top-0 end-0 m-3" 
+                            @onclick="() => DeleteAccount(account.Id)">Delete</button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (ShowAddModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-card text-main border-border">
+                <div class="modal-header border-border">
+                    <h5 class="modal-title">Add Account</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => ShowAddModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="NewAccount" OnValidSubmit="SaveAccount">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger small mb-3" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Name</label>
+                            <InputText @bind-Value="NewAccount.Name" class="form-control bg-dark text-main border-border" placeholder="e.g. HDFC Savings" />
+                            <ValidationMessage For="() => NewAccount.Name" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Icon</label>
+                            <InputText @bind-Value="NewAccount.Icon" class="form-control bg-dark text-main border-border" placeholder="e.g. 🏦" />
+                            <ValidationMessage For="() => NewAccount.Icon" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Color (Hex)</label>
+                            <InputText @bind-Value="NewAccount.Color" class="form-control bg-dark text-main border-border" placeholder="#RRGGBB" />
+                            <ValidationMessage For="() => NewAccount.Color" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Initial Balance</label>
+                            <InputNumber @bind-Value="NewAccount.InitialBalance" class="form-control bg-dark text-main border-border" />
+                        </div>
+
+                        <button type="submit" class="btn-primary w-100">Save Account</button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Account>? AccountList;
+    private Dictionary<int, decimal> Balances = new();
+    private bool ShowAddModal = false;
+    private Account NewAccount = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        AccountList = await FinanceService.GetAccountsAsync();
+        Balances.Clear();
+        foreach (var account in AccountList)
+        {
+            Balances[account.Id] = await FinanceService.GetAccountBalanceAsync(account.Id);
+        }
+    }
+
+    private async Task SaveAccount()
+    {
+        await FinanceService.AddAccountAsync(NewAccount);
+        NewAccount = new();
+        ShowAddModal = false;
+        await LoadData();
+    }
+
+    private async Task DeleteAccount(int id)
+    {
+        await FinanceService.DeleteAccountAsync(id);
+        await LoadData();
+    }
+}
+
+<style>
+    .account-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+</style>

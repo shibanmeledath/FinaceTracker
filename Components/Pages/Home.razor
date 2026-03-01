@@ -1,0 +1,159 @@
+﻿@page "/"
+@using FinanceTracker.Services
+@using FinanceTracker.Models
+@inject FinanceService FinanceService
+
+<PageTitle>Dashboard - FinanceTracker</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Dashboard</h1>
+    <div class="d-flex gap-2">
+        <select class="form-select bg-card text-main border-border w-auto" @onchange="OnMonthChanged">
+            @for (int i = 1; i <= 12; i++)
+            {
+                <option value="@i" selected="@(i == SelectedMonth)">@System.Globalization.DateTimeFormatInfo.CurrentInfo.GetMonthName(i)</option>
+            }
+        </select>
+        <select class="form-select bg-card text-main border-border w-auto" @onchange="OnYearChanged">
+            @for (int i = 2024; i <= DateTime.Now.Year + 1; i++)
+            {
+                <option value="@i" selected="@(i == SelectedYear)">@i</option>
+            }
+        </select>
+    </div>
+</div>
+
+<div class="stats-grid mb-4">
+    <div class="glass-card">
+        <div class="stat-label">Total Balance</div>
+        <div class="stat-value">@TotalBalance.ToString("C")</div>
+    </div>
+    <div class="glass-card">
+        <div class="stat-label">@System.Globalization.DateTimeFormatInfo.CurrentInfo.GetMonthName(SelectedMonth) Income</div>
+        <div class="stat-value text-accent">@MonthlyIncome.ToString("C")</div>
+    </div>
+    <div class="glass-card">
+        <div class="stat-label">@System.Globalization.DateTimeFormatInfo.CurrentInfo.GetMonthName(SelectedMonth) Expense</div>
+        <div class="stat-value text-danger">@MonthlyExpense.ToString("C")</div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    @if (Accounts != null)
+    {
+        @foreach (var account in Accounts)
+        {
+            <div class="col-md-4">
+                <div class="glass-card h-100">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span>@account.Icon</span>
+                        <span class="text-muted small">@account.Name</span>
+                    </div>
+                    <div class="h5 mb-0">@AccountBalances[account.Id].ToString("C")</div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<div class="glass-card transaction-list">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>Recent Transactions</h3>
+        <a href="transactions" class="btn-primary">View All</a>
+    </div>
+
+    @if (RecentTransactions == null)
+    {
+        <p>Loading...</p>
+    }
+    else if (!RecentTransactions.Any())
+    {
+        <p>No transactions found for this period.</p>
+    }
+    else
+    {
+        @foreach (var t in RecentTransactions)
+        {
+            <div class="transaction-item">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="category-icon" style="background: @(t.Category?.Color ?? "#475569")">
+                        @(t.Category?.Icon ?? "🔁")
+                    </div>
+                    <div>
+                        <div class="fw-bold">@t.Description</div>
+                        <div class="text-muted small">@t.Date.ToShortDateString()</div>
+                    </div>
+                </div>
+                <div class="amount @(t.Type == TransactionType.Income ? "income" : t.Type == TransactionType.Transfer ? "transfer"  : "expense")">
+                    @(t.Type == TransactionType.Income ? "+" : t.Type == TransactionType.Transfer ? " " : "-") @t.Amount.ToString("C")
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<Transaction>? RecentTransactions;
+    private List<Account>? Accounts;
+    private Dictionary<int, decimal> AccountBalances = new();
+    private decimal TotalBalance;
+    private decimal MonthlyIncome;
+    private decimal MonthlyExpense;
+    private int SelectedMonth = DateTime.Now.Month;
+    private int SelectedYear = DateTime.Now.Year;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        TotalBalance = await FinanceService.GetTotalBalanceAsync();
+        var stats = await FinanceService.GetMonthlyStatsAsync(SelectedMonth, SelectedYear);
+        MonthlyIncome = stats.Income;
+        MonthlyExpense = stats.Expense;
+        
+        var allTransactions = await FinanceService.GetTransactionsAsync(SelectedMonth, SelectedYear);
+        RecentTransactions = allTransactions.Take(10).ToList();
+
+        Accounts = await FinanceService.GetAccountsAsync();
+        AccountBalances.Clear();
+        foreach (var account in Accounts)
+        {
+            AccountBalances[account.Id] = await FinanceService.GetAccountBalanceAsync(account.Id);
+        }
+    }
+
+    private async Task OnMonthChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int month))
+        {
+            SelectedMonth = month;
+            await LoadData();
+        }
+    }
+
+    private async Task OnYearChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int year))
+        {
+            SelectedYear = year;
+            await LoadData();
+        }
+    }
+}
+
+<style>
+    .category-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    .text-accent { color: var(--accent); }
+    .text-danger { color: var(--danger); }
+</style>
