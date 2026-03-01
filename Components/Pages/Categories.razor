@@ -1,0 +1,127 @@
+@page "/categories"
+@using FinanceTracker.Services
+@using FinanceTracker.Models
+@inject FinanceService FinanceService
+
+<PageTitle>Categories - FinanceTracker</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Categories</h1>
+    <button class="btn-primary" @onclick="() => ShowAddModal = true">Add Category</button>
+</div>
+
+<div class="stats-grid">
+    @if (CategoryList == null)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
+        @foreach (var c in CategoryList)
+        {
+            <div class="glass-card d-flex align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="category-icon" style="background: @c.Color">
+                        @c.Icon
+                    </div>
+                    <div>
+                        <div class="fw-bold">@c.Name</div>
+                        <div class="text-muted small">ID: @c.Id</div>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCategory(c.Id)">Delete</button>
+            </div>
+        }
+    }
+</div>
+
+@if (ShowAddModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-card text-main border-border">
+                <div class="modal-header border-border">
+                    <h5 class="modal-title">Add Category</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => ShowAddModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="NewCategory" OnValidSubmit="SaveCategory">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger small mb-3" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Name</label>
+                            <InputText @bind-Value="NewCategory.Name" class="form-control bg-dark text-main border-border" placeholder="e.g. Shopping" />
+                            <ValidationMessage For="() => NewCategory.Name" class="text-danger small" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Icon (Emoji)</label>
+                            <InputText @bind-Value="NewCategory.Icon" class="form-control bg-dark text-main border-border" placeholder="e.g. 🛍️" />
+                            <ValidationMessage For="() => NewCategory.Icon" class="text-danger small" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Color (Hex)</label>
+                            <InputText @bind-Value="NewCategory.Color" class="form-control bg-dark text-main border-border" placeholder="#RRGGBB" />
+                            <ValidationMessage For="() => NewCategory.Color" class="text-danger small" />
+                        </div>
+                        <button type="submit" class="btn-primary w-100">Save Category</button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Category>? CategoryList;
+    private bool ShowAddModal = false;
+    private Category NewCategory = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        CategoryList = await FinanceService.GetCategoriesAsync();
+    }
+
+    private async Task SaveCategory()
+    {
+        await FinanceService.AddCategoryAsync(NewCategory);
+        NewCategory = new();
+        ShowAddModal = false;
+        await LoadData();
+    }
+
+    private async Task DeleteCategory(int id)
+    {
+        try
+        {
+            await FinanceService.DeleteCategoryAsync(id);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            // Simple alert if category has transactions
+            Console.WriteLine($"Error deleting category: {ex.Message}");
+        }
+    }
+}
+
+<style>
+    .bg-card { background-color: var(--bg-card) !important; }
+    .text-main { color: var(--text-main) !important; }
+    .border-border { border-color: var(--border) !important; }
+    .category-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+</style>
