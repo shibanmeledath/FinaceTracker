@@ -5,7 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// 🔥 IMPORTANT FOR RENDER
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://*:{port}");
+
+// Add services
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -17,19 +21,20 @@ builder.Services.AddScoped<FinanceService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
 app.UseStatusCodePagesWithReExecute("/not-found");
-app.UseHttpsRedirection();
+
+// ❌ REMOVE THIS FOR RENDER
+// app.UseHttpsRedirection();
 
 app.UseAntiforgery();
-
 app.UseStaticFiles();
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
