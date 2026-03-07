@@ -1,0 +1,146 @@
+@page "/settings"
+@using FinanceTracker.Services
+@inject ThemeService ThemeService
+@inject IJSRuntime JS
+
+<PageTitle>Settings - FinanceTracker</PageTitle>
+
+<div class="settings-container">
+    <h1 class="mb-4">Settings</h1>
+
+    <div class="glass-card mb-4">
+        <h3 class="mb-3">Appearance</h3>
+        <p class="text-muted mb-4">Choose your preferred application theme. We support both high-contrast light and deep-black dark modes.</p>
+
+        <div class="theme-toggle-wrapper">
+            <div class="theme-option @(ThemeService.IsDarkMode ? "" : "active")" @onclick="SetLightMode">
+                <div class="theme-preview light">
+                    <div class="preview-header"></div>
+                    <div class="preview-content">
+                        <div class="preview-bar"></div>
+                        <div class="preview-bar short"></div>
+                    </div>
+                </div>
+                <div class="theme-label">
+                    <span class="bi bi-sun-fill me-2"></span> Light Mode
+                </div>
+            </div>
+
+            <div class="theme-option @(ThemeService.IsDarkMode ? "active" : "")" @onclick="SetDarkMode">
+                <div class="theme-preview dark">
+                    <div class="preview-header"></div>
+                    <div class="preview-content">
+                        <div class="preview-bar"></div>
+                        <div class="preview-bar short"></div>
+                    </div>
+                </div>
+                <div class="theme-label">
+                    <span class="bi bi-moon-stars-fill me-2"></span> Dark Mode
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card">
+        <h3 class="mb-3">About</h3>
+        <p class="mb-0 text-muted">FinanceTracker v1.0.0</p>
+        <p class="mb-0 text-muted">A modern solution for managing your personal finances with elegance and speed.</p>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await ThemeService.InitializeAsync();
+    }
+
+    private async Task SetLightMode()
+    {
+        if (ThemeService.IsDarkMode)
+        {
+            await ThemeService.ToggleThemeAsync();
+        }
+    }
+
+    private async Task SetDarkMode()
+    {
+        if (!ThemeService.IsDarkMode)
+        {
+            await ThemeService.ToggleThemeAsync();
+        }
+    }
+}
+
+<style>
+    .settings-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .theme-toggle-wrapper {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .theme-option {
+        cursor: pointer;
+        border: 2px solid transparent;
+        border-radius: 1rem;
+        padding: 0.5rem;
+        transition: all 0.2s;
+        background: var(--bg-card);
+    }
+
+    .theme-option:hover {
+        transform: translateY(-2px);
+        border-color: var(--primary-alpha);
+    }
+
+    .theme-option.active {
+        border-color: var(--primary);
+        background: var(--primary-alpha);
+    }
+
+    .theme-preview {
+        height: 120px;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .theme-preview.light { background: #ffffff; }
+    .theme-preview.dark { background: #000000; }
+
+    .preview-header {
+        height: 20px;
+        background: var(--border);
+        opacity: 0.5;
+    }
+
+    .preview-content {
+        padding: 1rem;
+        flex: 1;
+    }
+
+    .preview-bar {
+        height: 8px;
+        background: var(--border);
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+        width: 100%;
+    }
+
+    .preview-bar.short {
+        width: 60%;
+    }
+
+    .theme-label {
+        text-align: center;
+        font-weight: 600;
+        padding: 0.5rem;
+    }
+</style>
