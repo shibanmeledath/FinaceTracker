@@ -265,6 +265,79 @@ h3 {
     color: var(--danger);
 }
 
+/* Theme-Aware Utility Classes */
+.bg-card {
+    background-color: var(--bg-card) !important;
+}
+
+.text-main {
+    color: var(--text-main) !important;
+}
+
+.border-border {
+    border-color: var(--border) !important;
+}
+
+/* Global Form Elements */
+.form-control,
+.form-select {
+    background-color: var(--bg-main) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--bg-main) !important;
+    color: var(--text-main) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 0.25rem var(--primary-alpha) !important;
+}
+
+.form-control::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.7;
+}
+
+/* Modal Styling */
+.modal-content {
+    background-color: var(--bg-card) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 1.25rem !important;
+}
+
+.modal-header,
+.modal-footer {
+    border-color: var(--border) !important;
+}
+
+.btn-close-white {
+    filter: invert(1);
+}
+
+[data-theme="light"] .btn-close-white {
+    filter: none;
+}
+
+/* Table Styling */
+.table {
+    color: var(--text-main) !important;
+    --bs-table-bg: transparent !important;
+    --bs-table-color: var(--text-main) !important;
+    --bs-table-border-color: var(--border) !important;
+}
+
+.table thead th {
+    background-color: var(--bg-sidebar) !important;
+    color: var(--text-muted) !important;
+    border-bottom: 2px solid var(--border) !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+}
+
 /* Utilities */
 .mb-4 {
     margin-bottom: 2rem !important;
@@ -272,4 +345,12 @@ h3 {
 
 .p-0 {
     padding: 0 !important;
+}
+
+.mt-auto {
+    margin-top: auto !important;
+}
+
+.border-top {
+    border-top: 1px solid var(--border) !important;
 }

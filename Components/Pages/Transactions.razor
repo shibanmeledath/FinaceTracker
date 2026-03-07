@@ -9,13 +9,13 @@
     <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-3">
         <h1>Transactions</h1>
         <div class="d-flex gap-2">
-            <select class="form-select bg-card text-main border-border w-auto" @onchange="OnMonthChanged">
+            <select class="form-select w-auto" @onchange="OnMonthChanged">
                 @for (int i = 1; i <= 12; i++)
                 {
                     <option value="@i" selected="@(i == SelectedMonth)">@System.Globalization.DateTimeFormatInfo.CurrentInfo.GetMonthName(i)</option>
                 }
             </select>
-            <select class="form-select bg-card text-main border-border w-auto" @onchange="OnYearChanged">
+            <select class="form-select w-auto" @onchange="OnYearChanged">
                 @for (int i = 2024; i <= DateTime.Now.Year + 1; i++)
                 {
                     <option value="@i" selected="@(i == SelectedYear)">@i</option>
@@ -38,7 +38,7 @@
         }
         else
         {
-            <table class="table table-dark mb-0">
+            <table class="table mb-0">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -81,7 +81,7 @@
                                 </span>
                             }
                         </td>
-                        <td class="text-end @(t.Type == TransactionType.Income ? "text-accent" : t.Type == TransactionType.Expense ? "text-danger" : "text-white")">
+                        <td class="text-end @(t.Type == TransactionType.Income ? "text-accent" : t.Type == TransactionType.Expense ? "text-danger" : "")">
                             @(t.Type == TransactionType.Income ? "+" : t.Type == TransactionType.Expense ? "-" : "") ₹@t.Amount
                         </td>
                         <td class="text-end">
@@ -100,8 +100,8 @@
     <div class="modal-backdrop fade show"></div>
     <div class="modal fade show d-block" tabindex="-1">
         <div class="modal-dialog">
-            <div class="modal-content bg-card text-main border-border">
-                <div class="modal-header border-border">
+            <div class="modal-content">
+                <div class="modal-header">
                     <h5 class="modal-title">Add @(NewTransaction.Type == TransactionType.Transfer ? "Transfer" : "Transaction")</h5>
                     <button type="button" class="btn-close btn-close-white" @onclick="() => ShowAddModal = false"></button>
                 </div>
@@ -112,7 +112,7 @@
 
                         <div class="mb-3">
                             <label class="form-label">Type</label>
-                            <InputSelect @bind-Value="NewTransaction.Type" class="form-control bg-dark text-main border-border">
+                            <InputSelect @bind-Value="NewTransaction.Type" class="form-control">
                                 <option value="@TransactionType.Expense">Expense</option>
                                 <option value="@TransactionType.Income">Income</option>
                                 <option value="@TransactionType.Transfer">Transfer</option>
@@ -121,19 +121,19 @@
 
                         <div class="mb-3">
                             <label class="form-label">Description</label>
-                            <InputText @bind-Value="NewTransaction.Description" class="form-control bg-dark text-main border-border" placeholder="e.g. Grocery Shopping" />
+                            <InputText @bind-Value="NewTransaction.Description" class="form-control" placeholder="e.g. Grocery Shopping" />
                             <ValidationMessage For="() => NewTransaction.Description" class="text-danger small" />
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Date</label>
-                                <InputDate @bind-Value="NewTransaction.Date" class="form-control bg-dark text-main border-border" />
+                                <InputDate @bind-Value="NewTransaction.Date" class="form-control" />
                                 <ValidationMessage For="() => NewTransaction.Date" class="text-danger small" />
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Amount</label>
-                                <InputNumber @bind-Value="NewTransaction.Amount" class="form-control bg-dark text-main border-border" step="0.01" />
+                                <InputNumber @bind-Value="NewTransaction.Amount" class="form-control" step="0.01" />
                                 <ValidationMessage For="() => NewTransaction.Amount" class="text-danger small" />
                             </div>
                         </div>
@@ -141,7 +141,7 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">@(NewTransaction.Type == TransactionType.Transfer ? "From Account" : "Account")</label>
-                                <InputSelect @bind-Value="NewTransaction.AccountId" class="form-control bg-dark text-main border-border">
+                                <InputSelect @bind-Value="NewTransaction.AccountId" class="form-control">
                                     <option value="0" disabled>Select account</option>
                                     @foreach (var acc in Accounts)
                                     {
@@ -155,7 +155,7 @@
                             {
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">To Account</label>
-                                    <InputSelect @bind-Value="NewTransaction.ToAccountId" class="form-control bg-dark text-main border-border">
+                                    <InputSelect @bind-Value="NewTransaction.ToAccountId" class="form-control">
                                         <option value="">Select destination</option>
                                         @foreach (var acc in Accounts)
                                         {
@@ -172,7 +172,7 @@
                             {
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Category</label>
-                                    <InputSelect @bind-Value="NewTransaction.CategoryId" class="form-control bg-dark text-main border-border">
+                                    <InputSelect @bind-Value="NewTransaction.CategoryId" class="form-control">
                                         <option value="0" disabled>Select a category</option>
                                         @foreach (var c in Categories)
                                         {
@@ -263,11 +263,4 @@
     }
 }
 
-<style>
-    .table { color: var(--text-main) !important; }
-    .table thead th { border-bottom-color: var(--border) !important; background: var(--bg-sidebar); }
-    .table td { border-color: var(--border) !important; background: transparent; }
-    .modal-content { background-color: var(--bg-card) !important; border-color: var(--border) !important; }
-    .form-control, .form-select { background-color: var(--bg-main) !important; color: var(--text-main) !important; border-color: var(--border) !important; }
-    .form-control:focus, .form-select:focus { background-color: var(--bg-main) !important; border-color: var(--primary) !important; box-shadow: 0 0 0 0.25rem var(--primary-alpha) !important; }
-</style>
+@* Styles are now handled globally in app.css *@
