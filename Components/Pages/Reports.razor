@@ -1,0 +1,135 @@
+@page "/reports"
+@using FinanceTracker.Services
+@using FinanceTracker.Models
+@inject FinanceService FinanceService
+@inject IJSRuntime JS
+
+<PageTitle>Reports - FinanceTracker</PageTitle>
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <h1>Reports</h1>
+    <div class="d-flex gap-2">
+        <select class="form-select w-auto" @onchange="OnMonthChanged">
+            @for (int i = 1; i <= 12; i++)
+            {
+                <option value="@i" selected="@(i == SelectedMonth)">@System.Globalization.DateTimeFormatInfo.CurrentInfo.GetMonthName(i)</option>
+            }
+        </select>
+        <select class="form-select w-auto" @onchange="OnYearChanged">
+            @for (int i = 2024; i <= DateTime.Now.Year + 1; i++)
+            {
+                <option value="@i" selected="@(i == SelectedYear)">@i</option>
+            }
+        </select>
+        <button class="btn-primary" @onclick="DownloadPDF">
+            <span class="bi bi-download"></span> Download PDF
+        </button>
+    </div>
+</div>
+
+<div class="stats-grid mb-4">
+    <div class="glass-card">
+        <div class="stat-label">Monthly Income</div>
+        <div class="stat-value text-accent">₹@MonthlyIncome</div>
+    </div>
+    <div class="glass-card">
+        <div class="stat-label">Monthly Expense</div>
+        <div class="stat-value text-danger">₹@MonthlyExpense</div>
+    </div>
+    <div class="glass-card">
+        <div class="stat-label">Net Savings</div>
+        <div class="stat-value">₹@(MonthlyIncome - MonthlyExpense)</div>
+    </div>
+</div>
+
+<div class="glass-card mb-4">
+    <h3 class="mb-4">Category Breakdown</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th class="text-end">Total Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Breakdown)
+                {
+                    <tr>
+                        <td>
+                            <span class="badge" style="background: @item.Color">@item.CategoryName</span>
+                        </td>
+                        <td>@item.Type</td>
+                        <td class="text-end @(item.Type == TransactionType.Income ? "text-accent" : "text-danger")">
+                            ₹@item.Amount
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private int SelectedMonth = DateTime.Now.Month;
+    private int SelectedYear = DateTime.Now.Year;
+    private decimal MonthlyIncome;
+    private decimal MonthlyExpense;
+    private List<CategoryBreakdown> Breakdown = new();
+    private List<Transaction> Transactions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        var stats = await FinanceService.GetMonthlyStatsAsync(SelectedMonth, SelectedYear);
+        MonthlyIncome = stats.Income;
+        MonthlyExpense = stats.Expense;
+
+        Breakdown = await FinanceService.GetCategoryBreakdownAsync(SelectedMonth, SelectedYear);
+        Transactions = await FinanceService.GetTransactionsAsync(SelectedMonth, SelectedYear);
+    }
+
+    private async Task OnMonthChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int month))
+        {
+            SelectedMonth = month;
+            await LoadData();
+        }
+    }
+
+    private async Task OnYearChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int year))
+        {
+            SelectedYear = year;
+            await LoadData();
+        }
+    }
+
+    private async Task DownloadPDF()
+    {
+        var title = $"Finance Report - {System.Globalization.DateTimeFormatInfo.CurrentInfo.GetMonthName(SelectedMonth)} {SelectedYear}";
+        var summary = new List<string> {
+            $"Total Income: Rs. {MonthlyIncome}",
+            $"Total Expense: Rs. {MonthlyExpense}",
+            $"Net Savings: Rs. {MonthlyIncome - MonthlyExpense}"
+        };
+
+        var headers = new[] { "Date", "Description", "Category", "Account", "Amount" };
+        var rows = Transactions.Select(t => new[] {
+            t.Date.ToShortDateString(),
+            t.Description,
+            t.Category?.Name ?? "None",
+            t.Account?.Name ?? "None",
+            (t.Type == TransactionType.Income ? "+" : "-") + " Rs. " + t.Amount
+        }).ToArray();
+
+        await JS.InvokeVoidAsync("downloadPdfReport", title, summary, headers, rows);
+    }
+}

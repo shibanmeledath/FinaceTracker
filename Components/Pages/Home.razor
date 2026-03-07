@@ -2,6 +2,7 @@
 @using FinanceTracker.Services
 @using FinanceTracker.Models
 @inject FinanceService FinanceService
+@inject IJSRuntime JS
 
 <PageTitle>Dashboard - FinanceTracker</PageTitle>
 
@@ -35,6 +36,25 @@
     <div class="glass-card">
         <div class="stat-label">@System.Globalization.DateTimeFormatInfo.CurrentInfo.GetMonthName(SelectedMonth) Expense</div>
         <div class="stat-value text-danger">₹@MonthlyExpense</div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12 col-lg-8">
+        <div class="glass-card h-100">
+            <h3 class="mb-4">Income vs Expense</h3>
+            <div style="height: 300px;">
+                <canvas id="incomeExpenseChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="glass-card h-100">
+            <h3 class="mb-4">Expense Categories</h3>
+            <div style="height: 300px;">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -101,27 +121,102 @@
     private decimal MonthlyExpense;
     private int SelectedMonth = DateTime.Now.Month;
     private int SelectedYear = DateTime.Now.Year;
+    private bool _isDataLoaded;
+    private bool _isRenderingCharts;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_isDataLoaded)
+        {
+            await RenderCharts();
+        }
+    }
+
     private async Task LoadData()
     {
-        TotalBalance = await FinanceService.GetTotalBalanceAsync();
-        var stats = await FinanceService.GetMonthlyStatsAsync(SelectedMonth, SelectedYear);
-        MonthlyIncome = stats.Income;
-        MonthlyExpense = stats.Expense;
-        
-        var allTransactions = await FinanceService.GetTransactionsAsync(SelectedMonth, SelectedYear);
-        RecentTransactions = allTransactions.Take(10).ToList();
-
-        Accounts = await FinanceService.GetAccountsAsync();
-        AccountBalances.Clear();
-        foreach (var account in Accounts)
+        _isDataLoaded = false;
+        try 
         {
-            AccountBalances[account.Id] = await FinanceService.GetAccountBalanceAsync(account.Id);
+            TotalBalance = await FinanceService.GetTotalBalanceAsync();
+            var stats = await FinanceService.GetMonthlyStatsAsync(SelectedMonth, SelectedYear);
+            MonthlyIncome = stats.Income;
+            MonthlyExpense = stats.Expense;
+            
+            var allTransactions = await FinanceService.GetTransactionsAsync(SelectedMonth, SelectedYear);
+            RecentTransactions = allTransactions.Take(10).ToList();
+
+            Accounts = await FinanceService.GetAccountsAsync();
+            AccountBalances.Clear();
+            foreach (var account in Accounts)
+            {
+                AccountBalances[account.Id] = await FinanceService.GetAccountBalanceAsync(account.Id);
+            }
+            _isDataLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
+        }
+    }
+
+    private async Task RenderCharts()
+    {
+        if (_isRenderingCharts) return;
+        _isRenderingCharts = true;
+
+        try 
+        {
+            var breakdown = await FinanceService.GetCategoryBreakdownAsync(SelectedMonth, SelectedYear);
+            var expenseBreakdown = breakdown.Where(x => x.Type == TransactionType.Expense).ToList();
+
+            // Income vs Expense Chart
+            var ieData = new
+            {
+                labels = new[] { "Income", "Expense" },
+                datasets = new[]
+                {
+                    new {
+                        data = new[] { (double)MonthlyIncome, (double)MonthlyExpense },
+                        backgroundColor = new[] { "#10b981", "#ef4444" },
+                        borderRadius = 8
+                    }
+                }
+            };
+
+            await JS.InvokeVoidAsync("renderChart", "incomeExpenseChart", "bar", ieData, new { 
+                plugins = new { legend = new { display = false } }
+            });
+
+            // Category Chart
+            var catData = new
+            {
+                labels = expenseBreakdown.Select(x => x.CategoryName).ToArray(),
+                datasets = new[]
+                {
+                    new {
+                        data = expenseBreakdown.Select(x => (double)x.Amount).ToArray(),
+                        backgroundColor = expenseBreakdown.Select(x => x.Color).ToArray(),
+                        borderWidth = 0
+                    }
+                }
+            };
+
+            await JS.InvokeVoidAsync("renderChart", "categoryChart", "doughnut", catData, new {
+                cutout = "70%"
+            });
+        }
+        catch (Exception ex)
+        {
+             Console.WriteLine($"Error rendering charts: {ex.Message}");
+        }
+        finally 
+        {
+            _isRenderingCharts = false;
         }
     }
 
@@ -131,6 +226,8 @@
         {
             SelectedMonth = month;
             await LoadData();
+            StateHasChanged();
+            await RenderCharts();
         }
     }
 
@@ -140,6 +237,8 @@
         {
             SelectedYear = year;
             await LoadData();
+            StateHasChanged();
+            await RenderCharts();
         }
     }
 }
