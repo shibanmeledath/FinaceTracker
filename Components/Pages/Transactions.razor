@@ -82,7 +82,7 @@
                             }
                         </td>
                         <td class="text-end @(t.Type == TransactionType.Income ? "text-accent" : t.Type == TransactionType.Expense ? "text-danger" : "text-white")">
-                            @(t.Type == TransactionType.Income ? "+" : t.Type == TransactionType.Expense ? "-" : "") @t.Amount.ToString("C")
+                            @(t.Type == TransactionType.Income ? "+" : t.Type == TransactionType.Expense ? "-" : "") ₹@t.Amount
                         </td>
                         <td class="text-end">
                             <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTransaction(t.Id)">Delete</button>
