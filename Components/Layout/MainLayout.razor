@@ -1,18 +1,65 @@
 ﻿@inherits LayoutComponentBase
 
+<div class="mobile-header">
+    <div class="logo m-0">
+        <span class="logo-icon">💰</span>
+        <span class="logo-text">Finance</span>
+    </div>
+    <button class="btn text-main fs-2 p-0" @onclick="ToggleSidebar">
+        ☰
+    </button>
+</div>
+
 <div class="main-container">
-    <aside class="sidebar">
-        <div class="logo">
-            <span class="logo-icon">💰</span>
-            <span class="logo-text">FinanceTracker</span>
+    <aside class="sidebar @(collapseNavMenu ? "" : "show")">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="logo m-0">
+                <span class="logo-icon">💰</span>
+                <span class="logo-text">FinanceTracker</span>
+            </div>
+            <button class="btn text-main d-lg-none" @onclick="ToggleSidebar">✕</button>
         </div>
         <NavMenu />
     </aside>
 
-    <main class="content-area">
+    <main class="content-area" @onclick="CloseSidebar">
         @Body
     </main>
 </div>
+
+@if (!collapseNavMenu)
+{
+    <div class="sidebar-backdrop d-lg-none" @onclick="ToggleSidebar"></div>
+}
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private void ToggleSidebar()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    private void CloseSidebar()
+    {
+        if (!collapseNavMenu)
+        {
+            collapseNavMenu = true;
+        }
+    }
+}
+
+<style>
+    .sidebar-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 998;
+    }
+</style>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
