@@ -1,23 +1,27 @@
 ﻿@inherits LayoutComponentBase
+@using FinanceTracker.Services
+@inject ThemeService ThemeService
 
 <div class="mobile-header">
     <div class="logo m-0">
         <span class="logo-icon">💰</span>
         <span class="logo-text">Finance</span>
     </div>
-    <button class="btn text-main fs-2 p-0" @onclick="ToggleSidebar">
-        ☰
+    <button class="btn text-main fs-2 p-0 border-0 bg-transparent" @onclick="ToggleSidebar">
+        <span class="bi bi-list"></span>
     </button>
 </div>
 
 <div class="main-container">
     <aside class="sidebar @(collapseNavMenu ? "" : "show")">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-5">
             <div class="logo m-0">
                 <span class="logo-icon">💰</span>
                 <span class="logo-text">FinanceTracker</span>
             </div>
-            <button class="btn text-main d-lg-none" @onclick="ToggleSidebar">✕</button>
+            <button class="btn text-muted d-lg-none border-0 bg-transparent" @onclick="ToggleSidebar">
+                <span class="bi bi-x-lg"></span>
+            </button>
         </div>
         <NavMenu />
     </aside>
@@ -34,6 +38,14 @@
 
 @code {
     private bool collapseNavMenu = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await ThemeService.InitializeAsync();
+        }
+    }
 
     private void ToggleSidebar()
     {

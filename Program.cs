@@ -34,6 +34,7 @@ builder.Services.AddDbContext<FinanceDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 builder.Services.AddScoped<FinanceService>();
+builder.Services.AddScoped<ThemeService>();
 
 var app = builder.Build();
 

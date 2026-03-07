@@ -264,9 +264,10 @@
 }
 
 <style>
-    .bg-card { background-color: var(--bg-card) !important; }
-    .text-main { color: var(--text-main) !important; }
-    .border-border { border-color: var(--border) !important; }
-    .text-accent { color: var(--accent); }
-    .text-danger { color: var(--danger); }
+    .table { color: var(--text-main) !important; }
+    .table thead th { border-bottom-color: var(--border) !important; background: var(--bg-sidebar); }
+    .table td { border-color: var(--border) !important; background: transparent; }
+    .modal-content { background-color: var(--bg-card) !important; border-color: var(--border) !important; }
+    .form-control, .form-select { background-color: var(--bg-main) !important; color: var(--text-main) !important; border-color: var(--border) !important; }
+    .form-control:focus, .form-select:focus { background-color: var(--bg-main) !important; border-color: var(--primary) !important; box-shadow: 0 0 0 0.25rem var(--primary-alpha) !important; }
 </style>
