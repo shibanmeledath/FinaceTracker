@@ -181,6 +181,7 @@
                 datasets = new[]
                 {
                     new {
+                        label = "Amount",
                         data = new[] { (double)MonthlyIncome, (double)MonthlyExpense },
                         backgroundColor = new[] { "#10b981", "#ef4444" },
                         borderRadius = 8
@@ -199,6 +200,7 @@
                 datasets = new[]
                 {
                     new {
+                        label = "Expenses",
                         data = expenseBreakdown.Select(x => (double)x.Amount).ToArray(),
                         backgroundColor = expenseBreakdown.Select(x => x.Color).ToArray(),
                         borderWidth = 0

@@ -8,28 +8,38 @@ window.renderChart = (canvasId, type, data, options) => {
         charts[canvasId].destroy();
     }
 
+    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-main').trim() || '#ffffff';
+    const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#a0a0a0';
+    const borderColor = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || 'rgba(255,255,255,0.1)';
+
     charts[canvasId] = new Chart(ctx, {
         type: type,
         data: data,
         options: {
-            ...options,
             responsive: true,
             maintainAspectRatio: false,
+            ...options,
             plugins: {
+                ...options.plugins,
                 legend: {
+                    display: options.plugins?.legend?.display !== false,
+                    ...options.plugins?.legend,
                     labels: {
-                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-main').trim() || '#ffffff'
+                        color: textColor,
+                        ...options.plugins?.legend?.labels
                     }
                 }
             },
             scales: type === 'pie' || type === 'doughnut' ? {} : {
                 x: {
-                    grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || 'rgba(255,255,255,0.1)' },
-                    ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#a0a0a0' }
+                    grid: { color: borderColor },
+                    ticks: { color: mutedColor },
+                    ...options.scales?.x
                 },
                 y: {
-                    grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || 'rgba(255,255,255,0.1)' },
-                    ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#a0a0a0' }
+                    grid: { color: borderColor },
+                    ticks: { color: mutedColor },
+                    ...options.scales?.y
                 }
             }
         }
