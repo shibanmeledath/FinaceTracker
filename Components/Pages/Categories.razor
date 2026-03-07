@@ -26,7 +26,6 @@
                     </div>
                     <div>
                         <div class="fw-bold">@c.Name</div>
-                        <div class="text-muted small">ID: @c.Id</div>
                     </div>
                 </div>
                 <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCategory(c.Id)">Delete</button>
@@ -40,8 +39,8 @@
     <div class="modal-backdrop fade show"></div>
     <div class="modal fade show d-block" tabindex="-1">
         <div class="modal-dialog">
-            <div class="modal-content bg-card text-main border-border">
-                <div class="modal-header border-border">
+            <div class="modal-content">
+                <div class="modal-header">
                     <h5 class="modal-title">Add Category</h5>
                     <button type="button" class="btn-close btn-close-white" @onclick="() => ShowAddModal = false"></button>
                 </div>
@@ -52,17 +51,17 @@
 
                         <div class="mb-3">
                             <label class="form-label">Name</label>
-                            <InputText @bind-Value="NewCategory.Name" class="form-control bg-dark text-main border-border" placeholder="e.g. Shopping" />
+                            <InputText @bind-Value="NewCategory.Name" class="form-control" placeholder="e.g. Shopping" />
                             <ValidationMessage For="() => NewCategory.Name" class="text-danger small" />
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Icon (Emoji)</label>
-                            <InputText @bind-Value="NewCategory.Icon" class="form-control bg-dark text-main border-border" placeholder="e.g. 🛍️" />
+                            <InputText @bind-Value="NewCategory.Icon" class="form-control" placeholder="e.g. 🛍️" />
                             <ValidationMessage For="() => NewCategory.Icon" class="text-danger small" />
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Color (Hex)</label>
-                            <InputText @bind-Value="NewCategory.Color" class="form-control bg-dark text-main border-border" placeholder="#RRGGBB" />
+                            <InputText @bind-Value="NewCategory.Color" class="form-control" placeholder="#RRGGBB" />
                             <ValidationMessage For="() => NewCategory.Color" class="text-danger small" />
                         </div>
                         <button type="submit" class="btn-primary w-100">Save Category</button>

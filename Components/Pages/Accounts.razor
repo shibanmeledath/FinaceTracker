@@ -29,8 +29,7 @@ else
                             <h4 class="mb-0">@account.Name</h4>
                         </div>
                     </div>
-                    <div class="stat-value mb-2">@Balances[account.Id].ToString("C")</div>
-                    <div class="text-muted small">ID: @account.Id</div>
+                    <div class="stat-value mb-2">₹@Balances[account.Id]</div>
                     
                     <button class="btn btn-outline-danger btn-sm position-absolute top-0 end-0 m-3" 
                             @onclick="() => DeleteAccount(account.Id)">Delete</button>
@@ -45,8 +44,8 @@ else
     <div class="modal-backdrop fade show"></div>
     <div class="modal fade show d-block" tabindex="-1">
         <div class="modal-dialog">
-            <div class="modal-content bg-card text-main border-border">
-                <div class="modal-header border-border">
+            <div class="modal-content">
+                <div class="modal-header">
                     <h5 class="modal-title">Add Account</h5>
                     <button type="button" class="btn-close btn-close-white" @onclick="() => ShowAddModal = false"></button>
                 </div>
@@ -57,25 +56,25 @@ else
 
                         <div class="mb-3">
                             <label class="form-label">Name</label>
-                            <InputText @bind-Value="NewAccount.Name" class="form-control bg-dark text-main border-border" placeholder="e.g. HDFC Savings" />
+                            <InputText @bind-Value="NewAccount.Name" class="form-control" placeholder="e.g. HDFC Savings" />
                             <ValidationMessage For="() => NewAccount.Name" class="text-danger small" />
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Icon</label>
-                            <InputText @bind-Value="NewAccount.Icon" class="form-control bg-dark text-main border-border" placeholder="e.g. 🏦" />
+                            <InputText @bind-Value="NewAccount.Icon" class="form-control" placeholder="e.g. 🏦" />
                             <ValidationMessage For="() => NewAccount.Icon" class="text-danger small" />
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Color (Hex)</label>
-                            <InputText @bind-Value="NewAccount.Color" class="form-control bg-dark text-main border-border" placeholder="#RRGGBB" />
+                            <InputText @bind-Value="NewAccount.Color" class="form-control" placeholder="#RRGGBB" />
                             <ValidationMessage For="() => NewAccount.Color" class="text-danger small" />
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Initial Balance</label>
-                            <InputNumber @bind-Value="NewAccount.InitialBalance" class="form-control bg-dark text-main border-border" />
+                            <InputNumber @bind-Value="NewAccount.InitialBalance" class="form-control" />
                         </div>
 
                         <button type="submit" class="btn-primary w-100">Save Account</button>
