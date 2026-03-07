@@ -26,15 +26,15 @@
 <div class="stats-grid mb-4">
     <div class="glass-card">
         <div class="stat-label">Total Balance</div>
-        <div class="stat-value">@TotalBalance.ToString("C")</div>
+        <div class="stat-value">₹@TotalBalance</div>
     </div>
     <div class="glass-card">
         <div class="stat-label">@System.Globalization.DateTimeFormatInfo.CurrentInfo.GetMonthName(SelectedMonth) Income</div>
-        <div class="stat-value text-accent">@MonthlyIncome.ToString("C")</div>
+        <div class="stat-value text-accent">₹@MonthlyIncome</div>
     </div>
     <div class="glass-card">
         <div class="stat-label">@System.Globalization.DateTimeFormatInfo.CurrentInfo.GetMonthName(SelectedMonth) Expense</div>
-        <div class="stat-value text-danger">@MonthlyExpense.ToString("C")</div>
+        <div class="stat-value text-danger">₹@MonthlyExpense</div>
     </div>
 </div>
 
@@ -49,7 +49,7 @@
                         <span>@account.Icon</span>
                         <span class="text-muted small">@account.Name</span>
                     </div>
-                    <div class="h5 mb-0">@AccountBalances[account.Id].ToString("C")</div>
+                    <div class="h5 mb-0">₹@AccountBalances[account.Id]</div>
                 </div>
             </div>
         }
@@ -85,7 +85,7 @@
                     </div>
                 </div>
                 <div class="amount @(t.Type == TransactionType.Income ? "income" : t.Type == TransactionType.Transfer ? "transfer"  : "expense")">
-                    @(t.Type == TransactionType.Income ? "+" : t.Type == TransactionType.Transfer ? " " : "-") @t.Amount.ToString("C")
+                    @(t.Type == TransactionType.Income ? "+" : t.Type == TransactionType.Transfer ? " " : "-") ₹@t.Amount
                 </div>
             </div>
         }
