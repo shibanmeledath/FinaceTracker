@@ -5,16 +5,16 @@
 
 <PageTitle>Dashboard - FinanceTracker</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
     <h1>Dashboard</h1>
     <div class="d-flex gap-2">
-        <select class="form-select bg-card text-main border-border w-auto" @onchange="OnMonthChanged">
+        <select class="form-select bg-card text-main border-border w-auto flex-grow-1 flex-md-grow-0" @onchange="OnMonthChanged">
             @for (int i = 1; i <= 12; i++)
             {
                 <option value="@i" selected="@(i == SelectedMonth)">@System.Globalization.DateTimeFormatInfo.CurrentInfo.GetMonthName(i)</option>
             }
         </select>
-        <select class="form-select bg-card text-main border-border w-auto" @onchange="OnYearChanged">
+        <select class="form-select bg-card text-main border-border w-auto flex-grow-1 flex-md-grow-0" @onchange="OnYearChanged">
             @for (int i = 2024; i <= DateTime.Now.Year + 1; i++)
             {
                 <option value="@i" selected="@(i == SelectedYear)">@i</option>
@@ -38,12 +38,12 @@
     </div>
 </div>
 
-<div class="row g-4 mb-4">
+<div class="row g-3 g-md-4 mb-4">
     @if (Accounts != null)
     {
         @foreach (var account in Accounts)
         {
-            <div class="col-md-4">
+            <div class="col-12 col-md-4">
                 <div class="glass-card h-100">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <span>@account.Icon</span>
