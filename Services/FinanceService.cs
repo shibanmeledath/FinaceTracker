@@ -148,4 +148,64 @@ public class FinanceService
             await _context.SaveChangesAsync();
         }
     }
+    public async Task<List<CategoryBreakdown>> GetCategoryBreakdownAsync(int month, int year)
+    {
+        var startDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var endDate = startDate.AddMonths(1);
+
+        var transactions = await _context.Transactions
+            .Include(t => t.Category)
+            .Where(t => t.Date >= startDate && t.Date < endDate && t.Type != TransactionType.Transfer)
+            .ToListAsync();
+
+        return transactions
+            .GroupBy(t => new { t.CategoryId, Name = t.Category?.Name ?? "Unknown", Color = t.Category?.Color ?? "#475569", t.Type })
+            .Select(g => new CategoryBreakdown
+            {
+                CategoryName = g.Key.Name,
+                Color = g.Key.Color,
+                Type = g.Key.Type,
+                Amount = g.Sum(t => t.Amount)
+            })
+            .OrderByDescending(x => x.Amount)
+            .ToList();
+    }
+
+    public async Task<List<MonthlyStat>> GetYearlyStatsAsync(int year)
+    {
+        var startDate = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var endDate = startDate.AddYears(1);
+
+        var transactions = await _context.Transactions
+            .Where(t => t.Date >= startDate && t.Date < endDate)
+            .ToListAsync();
+
+        var stats = new List<MonthlyStat>();
+        for (int i = 1; i <= 12; i++)
+        {
+            var monthTransactions = transactions.Where(t => t.Date.Month == i).ToList();
+            stats.Add(new MonthlyStat
+            {
+                Month = i,
+                Income = monthTransactions.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount),
+                Expense = monthTransactions.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount)
+            });
+        }
+        return stats;
+    }
+}
+
+public class CategoryBreakdown
+{
+    public string CategoryName { get; set; } = "";
+    public string Color { get; set; } = "";
+    public TransactionType Type { get; set; }
+    public decimal Amount { get; set; }
+}
+
+public class MonthlyStat
+{
+    public int Month { get; set; }
+    public decimal Income { get; set; }
+    public decimal Expense { get; set; }
 }
