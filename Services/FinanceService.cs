@@ -193,6 +193,44 @@ public class FinanceService
         }
         return stats;
     }
+
+    // --- Recurring Transactions ---
+    
+    public async Task<List<RecurringTransaction>> GetRecurringTransactionsAsync()
+    {
+        return await _context.RecurringTransactions
+            .Include(rt => rt.Category)
+            .Include(rt => rt.Account)
+            .Include(rt => rt.ToAccount)
+            .OrderBy(rt => rt.NextDueDate)
+            .ToListAsync();
+    }
+
+    public async Task AddRecurringTransactionAsync(RecurringTransaction recurring)
+    {
+        if (recurring.NextDueDate == default)
+        {
+            recurring.NextDueDate = recurring.StartDate;
+        }
+        _context.RecurringTransactions.Add(recurring);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task UpdateRecurringTransactionAsync(RecurringTransaction recurring)
+    {
+        _context.RecurringTransactions.Update(recurring);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteRecurringTransactionAsync(int id)
+    {
+        var recurring = await _context.RecurringTransactions.FindAsync(id);
+        if (recurring != null)
+        {
+            _context.RecurringTransactions.Remove(recurring);
+            await _context.SaveChangesAsync();
+        }
+    }
 }
 
 public class CategoryBreakdown
