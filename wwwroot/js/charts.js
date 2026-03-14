@@ -46,7 +46,7 @@ window.renderChart = (canvasId, type, data, options) => {
     });
 };
 
-window.downloadPdfReport = (title, summary, headers, rows) => {
+window.downloadPdfReport = (title, summary, insights, headers, rows, chartIds) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
@@ -76,6 +76,49 @@ window.downloadPdfReport = (title, summary, headers, rows) => {
         doc.text(line, 14, yPos);
         yPos += 7;
     });
+
+    if (insights && insights.length > 0) {
+        yPos += 5;
+        doc.setFontSize(14);
+        doc.setTextColor(isDark ? '#4ade80' : '#16a34a'); // distinct green/accent color for AI
+        doc.text("AI Spend Analysis", 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(11);
+        doc.setTextColor(textColor);
+        insights.forEach(insight => {
+            const lines = doc.splitTextToSize(insight, 180);
+            doc.text(lines, 14, yPos);
+            yPos += (7 * lines.length);
+        });
+    }
+
+    // Add Charts
+    if (chartIds && chartIds.length > 0) {
+        yPos += 10;
+        chartIds.forEach(id => {
+            const canvas = document.getElementById(id);
+            if (canvas) {
+                const imgData = canvas.toDataURL('image/png', 1.0);
+                // Check if we need a new page
+                if (yPos > 200) {
+                    doc.addPage();
+                    doc.setFillColor(bgColor);
+                    doc.rect(0, 0, 210, 297, 'F');
+                    doc.setTextColor(textColor);
+                    yPos = 20;
+                }
+
+                doc.setFontSize(12);
+                doc.text(id.includes('income') ? "Income vs Expense Breakdown" : "Expense Categories", 14, yPos);
+                yPos += 5;
+
+                // Add chart image (width: 180mm, aspect ratio maintained roughly)
+                doc.addImage(imgData, 'PNG', 14, yPos, 180, 80);
+                yPos += 90;
+            }
+        });
+    }
 
     doc.autoTable({
         head: [headers],

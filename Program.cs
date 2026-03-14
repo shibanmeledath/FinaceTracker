@@ -35,6 +35,7 @@ builder.Services.AddDbContext<FinanceDbContext>(options =>
 
 builder.Services.AddScoped<FinanceService>();
 builder.Services.AddScoped<ThemeService>();
+builder.Services.AddScoped<AiInsightService>();
 
 var app = builder.Build();
 
