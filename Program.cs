@@ -41,9 +41,15 @@ builder.Services.AddScoped<AiInsightService>();
 // Add Background Services
 builder.Services.AddHostedService<RecurringTransactionWorker>();
 
-builder.Services.AddAuthenticationCore();
+builder.Services.AddAuthentication("Cookies")
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/login";
+    });
+builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddScoped<AuthenticationStateProvider, FinanceAuthStateProvider>();
+builder.Services.AddScoped<FinanceAuthStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<FinanceAuthStateProvider>());
 
 var app = builder.Build();
 
@@ -72,6 +78,9 @@ app.UseStatusCodePagesWithReExecute("/not-found");
 // ❌ Do NOT use HTTPS redirect on Render
 // Render already provides HTTPS
 
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 app.UseStaticFiles();
 
