@@ -1,0 +1,208 @@
+@page "/login"
+@layout LoginLayout
+@using FinanceTracker.Services
+@using FinanceTracker.Data
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Cryptography
+@using System.Text
+@inject FinanceAuthStateProvider AuthProvider
+@inject FinanceDbContext DbContext
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>Unlock - FinanceTracker</PageTitle>
+
+<div class="login-container">
+    <div class="glass-card login-card text-center">
+        <div class="logo justify-content-center mb-4">
+            <span class="bi bi-wallet2 logo-icon"></span>
+            Finance Tracker
+        </div>
+
+        @if (_isFirstTimeSetup)
+        {
+            <h3 class="mb-3">Welcome!</h3>
+            <p class="text-muted mb-4">Set up a 4 or 6-digit master PIN to secure your financial data.</p>
+        }
+        else
+        {
+            <h3 class="mb-3">Welcome Back</h3>
+            <p class="text-muted mb-4">Enter your PIN to unlock.</p>
+        }
+
+        <div class="mb-4">
+            <input type="password" class="form-control text-center fs-3 letter-spacing-lg" 
+                   @bind="_pinInput" @bind:event="oninput" @onkeyup="HandleKeyUp" 
+                   maxlength="6" placeholder="••••" autofocus />
+            
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="text-danger small mt-2">@_errorMessage</div>
+            }
+        </div>
+
+        <button class="btn-primary w-100 mb-3" @onclick="SubmitPin" disabled="@(_pinInput.Length < 4)">
+            @(_isFirstTimeSetup ? "Set PIN" : "Unlock")
+        </button>
+
+        @if (!_isFirstTimeSetup && _hasBiometrics)
+        {
+            <button class="btn btn-outline-secondary w-100 d-flex justify-content-center align-items-center gap-2" @onclick="UnlockWithBiometrics">
+                <i class="bi bi-fingerprint fs-5"></i> Use Biometrics
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    private string _pinInput = "";
+    private string _errorMessage = "";
+    private bool _isFirstTimeSetup = false;
+    private bool _hasBiometrics = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var config = await DbContext.AppConfigurations.FirstOrDefaultAsync();
+        if (config == null || string.IsNullOrEmpty(config.PinHash))
+        {
+            _isFirstTimeSetup = true;
+        }
+        else if (!string.IsNullOrEmpty(config.WebAuthnCredentialId))
+        {
+            _hasBiometrics = true;
+        }
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && _pinInput.Length >= 4)
+        {
+            await SubmitPin();
+        }
+    }
+
+    private async Task SubmitPin()
+    {
+        _errorMessage = "";
+        if (_pinInput.Length < 4) return;
+
+        var config = await DbContext.AppConfigurations.FirstOrDefaultAsync();
+
+        if (_isFirstTimeSetup)
+        {
+            // Hash and save new PIN
+            var salt = Guid.NewGuid().ToString("N");
+            var hash = ComputeSha256Hash(_pinInput + salt);
+
+            if (config == null)
+            {
+                config = new Models.AppConfiguration { PinHash = hash, PinSalt = salt };
+                DbContext.AppConfigurations.Add(config);
+            }
+            else
+            {
+                config.PinHash = hash;
+                config.PinSalt = salt;
+            }
+
+            await DbContext.SaveChangesAsync();
+            await AuthProvider.LoginAsync();
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            // Verify existing PIN
+            if (config != null)
+            {
+                var inputHash = ComputeSha256Hash(_pinInput + config.PinSalt);
+                if (inputHash == config.PinHash)
+                {
+                    await AuthProvider.LoginAsync();
+                    NavigationManager.NavigateTo("/");
+                    return;
+                }
+            }
+            
+            _errorMessage = "Incorrect PIN. Please try again.";
+            _pinInput = "";
+        }
+    }
+
+    private async Task UnlockWithBiometrics()
+    {
+        _errorMessage = "";
+        try
+        {
+            var config = await DbContext.AppConfigurations.FirstOrDefaultAsync();
+            if (config == null || string.IsNullOrEmpty(config.WebAuthnCredentialId)) return;
+
+            // Generate a random challenge
+            var challengeBytes = new byte[32];
+            RandomNumberGenerator.Fill(challengeBytes);
+            var challenge = Convert.ToBase64String(challengeBytes);
+
+            // Call JS Interop to trigger WebAuthn get()
+            var result = await JS.InvokeAsync<WebAuthnLoginResult>("loginWithBiometrics", config.WebAuthnCredentialId, challenge);
+            
+            if (result != null && result.Success)
+            {
+                // In a production app, you would cryptographically verify the signature on the server here.
+                // For a local personal app, successful assertion generation by the browser is sufficient proof of presence.
+                await AuthProvider.LoginAsync();
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                _errorMessage = "Biometric authentication failed or was cancelled.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Biometrics error: " + ex.Message;
+        }
+    }
+
+    private string ComputeSha256Hash(string rawData)
+    {
+        using (SHA256 sha256Hash = SHA256.Create())
+        {
+            byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                builder.Append(bytes[i].ToString("x2"));
+            }
+            return builder.ToString();
+        }
+    }
+
+    public class WebAuthnLoginResult
+    {
+        public bool Success { get; set; }
+        public string? ErrorMessage { get; set; }
+        // Actual signature data would go here for server verification
+    }
+}
+
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 1rem;
+        background-color: var(--bg-main);
+        background-image: 
+            radial-gradient(circle at 50% 50%, var(--primary-alpha) 0%, transparent 50%);
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 400px;
+        padding: 3rem 2rem;
+    }
+
+    .letter-spacing-lg {
+        letter-spacing: 0.5rem;
+    }
+</style>

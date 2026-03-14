@@ -2,6 +2,7 @@ using FinanceTracker.Components;
 using FinanceTracker.Data;
 using FinanceTracker.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +40,10 @@ builder.Services.AddScoped<AiInsightService>();
 
 // Add Background Services
 builder.Services.AddHostedService<RecurringTransactionWorker>();
+
+builder.Services.AddAuthenticationCore();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<AuthenticationStateProvider, FinanceAuthStateProvider>();
 
 var app = builder.Build();
 

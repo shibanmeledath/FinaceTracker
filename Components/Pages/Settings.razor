@@ -1,6 +1,10 @@
 @page "/settings"
 @using FinanceTracker.Services
+@using FinanceTracker.Data
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Cryptography
 @inject ThemeService ThemeService
+@inject FinanceDbContext DbContext
 @inject IJSRuntime JS
 
 <PageTitle>Settings - FinanceTracker</PageTitle>
@@ -41,6 +45,40 @@
         </div>
     </div>
 
+    <div class="glass-card mb-4" style="border-left: 4px solid var(--danger);">
+        <h3 class="mb-3 d-flex align-items-center gap-2">
+            <span class="bi bi-shield-lock text-danger"></span> Security
+        </h3>
+        <p class="text-muted mb-4">Secure your app with local device biometrics (like Face ID or Touch ID).</p>
+
+        @if (_isBiometricsEnabled)
+        {
+            <div class="alert alert-success d-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill"></i> Biometrics are enabled for this device.
+            </div>
+            <button class="btn btn-outline-danger mt-2" @onclick="RemoveBiometrics">Disable Biometrics</button>
+        }
+        else
+        {
+            <button class="btn btn-primary" @onclick="EnableBiometrics" disabled="@_isRegistering">
+                @if (_isRegistering)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span>Waiting for device...</span>
+                }
+                else
+                {
+                    <i class="bi bi-fingerprint me-2"></i> <span>Setup Biometrics</span>
+                }
+            </button>
+        }
+        
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="text-danger small mt-3">@_errorMessage</div>
+        }
+    </div>
+
     <div class="glass-card">
         <h3 class="mb-3">About</h3>
         <p class="mb-0 text-muted">FinanceTracker v1.0.0</p>
@@ -49,9 +87,19 @@
 </div>
 
 @code {
+    private bool _isBiometricsEnabled = false;
+    private bool _isRegistering = false;
+    private string _errorMessage = "";
+
     protected override async Task OnInitializedAsync()
     {
         await ThemeService.InitializeAsync();
+        
+        var config = await DbContext.AppConfigurations.FirstOrDefaultAsync();
+        if (config != null && !string.IsNullOrEmpty(config.WebAuthnCredentialId))
+        {
+            _isBiometricsEnabled = true;
+        }
     }
 
     private async Task SetLightMode()
@@ -68,6 +116,69 @@
         {
             await ThemeService.ToggleThemeAsync();
         }
+    }
+
+    private async Task EnableBiometrics()
+    {
+        _isRegistering = true;
+        _errorMessage = "";
+        StateHasChanged();
+
+        try
+        {
+            // Generate random challenge
+            var challengeBytes = new byte[32];
+            RandomNumberGenerator.Fill(challengeBytes);
+            var challenge = Convert.ToBase64String(challengeBytes);
+
+            var result = await JS.InvokeAsync<WebAuthnRegistrationResult>("setupBiometrics", "user-id-123", challenge);
+
+            if (result != null && result.Success && !string.IsNullOrEmpty(result.CredentialId))
+            {
+                var config = await DbContext.AppConfigurations.FirstOrDefaultAsync();
+                if (config != null)
+                {
+                    config.WebAuthnCredentialId = result.CredentialId;
+                    await DbContext.SaveChangesAsync();
+                    _isBiometricsEnabled = true;
+                }
+                else
+                {
+                    _errorMessage = "App configuration not found. Please set a PIN first.";
+                }
+            }
+            else
+            {
+                _errorMessage = result?.ErrorMessage ?? "Registration failed or was cancelled.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Error: " + ex.Message;
+        }
+        finally
+        {
+            _isRegistering = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RemoveBiometrics()
+    {
+        var config = await DbContext.AppConfigurations.FirstOrDefaultAsync();
+        if (config != null)
+        {
+            config.WebAuthnCredentialId = null;
+            await DbContext.SaveChangesAsync();
+            _isBiometricsEnabled = false;
+        }
+    }
+
+    public class WebAuthnRegistrationResult
+    {
+        public bool Success { get; set; }
+        public string? CredentialId { get; set; }
+        public string? ErrorMessage { get; set; }
     }
 }
 
