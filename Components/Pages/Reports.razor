@@ -2,6 +2,7 @@
 @using FinanceTracker.Services
 @using FinanceTracker.Models
 @inject FinanceService FinanceService
+@inject AiInsightService AiInsightService
 @inject IJSRuntime JS
 
 <PageTitle>Reports - FinanceTracker</PageTitle>
@@ -27,7 +28,24 @@
     </div>
 </div>
 
-<div class="stats-grid mb-4">
+@if (Insights != null && Insights.Any())
+{
+    <div class="glass-card mb-4" style="border-left: 4px solid var(--primary);">
+        <h3 class="mb-3 d-flex align-items-center gap-2">
+            <span class="bi bi-magic text-primary"></span> Spend Analysis
+        </h3>
+        <ul class="list-unstyled mb-0">
+            @foreach (var insight in Insights)
+            {
+                <li class="mb-2 d-flex align-items-start gap-2">
+                    <span>@insight</span>
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+<div class="row g-4 mb-4">
     <div class="glass-card">
         <div class="stat-label">Monthly Income</div>
         <div class="stat-value text-accent">₹@MonthlyIncome</div>
@@ -78,6 +96,8 @@
     private decimal MonthlyExpense;
     private List<CategoryBreakdown> Breakdown = new();
     private List<Transaction> Transactions = new();
+    private List<string> Insights = new();
+    private bool _isDataLoaded;
 
     protected override async Task OnInitializedAsync()
     {
@@ -92,6 +112,10 @@
 
         Breakdown = await FinanceService.GetCategoryBreakdownAsync(SelectedMonth, SelectedYear);
         Transactions = await FinanceService.GetTransactionsAsync(SelectedMonth, SelectedYear);
+        
+        Insights = AiInsightService.GenerateInsights(MonthlyIncome, MonthlyExpense, Breakdown);
+
+        _isDataLoaded = true;
     }
 
     private async Task OnMonthChanged(ChangeEventArgs e)
@@ -130,6 +154,7 @@
             (t.Type == TransactionType.Income ? "+" : "-") + " Rs. " + t.Amount
         }).ToArray();
 
-        await JS.InvokeVoidAsync("downloadPdfReport", title, summary, headers, rows);
+        var chartIds = new[] { "reportIncomeChart", "reportCategoryChart" };
+        await JS.InvokeVoidAsync("downloadPdfReport", title, summary, Insights, headers, rows, chartIds);
     }
 }
