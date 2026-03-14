@@ -1,0 +1,355 @@
+@page "/recurring"
+@using FinanceTracker.Models
+@using FinanceTracker.Services
+@inject FinanceService FinanceService
+
+<PageTitle>Recurring Transactions - FinanceTracker</PageTitle>
+
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-4 gap-3">
+    <h1>Recurring Transactions</h1>
+    <button class="btn-primary" @onclick="() => OpenModal()">Add New</button>
+</div>
+
+<!-- Header Stats -->
+<div class="glass-card mb-4">
+    <div class="row text-center">
+        <div class="col-6 border-end border-border">
+            <span class="stat-label">Total Monthly Subscriptions</span>
+            <span class="stat-value text-danger">₹@_totalMonthlyExpenses</span>
+        </div>
+        <div class="col-6">
+            <span class="stat-label">Total Monthly Incomes</span>
+            <span class="stat-value text-accent">₹@_totalMonthlyIncome</span>
+        </div>
+    </div>
+</div>
+
+@if (_recurringList == null)
+{
+    <div class="glass-card"><p>Loading...</p></div>
+}
+else if (!_recurringList.Any())
+{
+    <div class="glass-card text-center py-5">
+        <div style="font-size: 3rem; color: var(--text-muted); opacity: 0.5;">
+            <i class="bi bi-calendar-event"></i>
+        </div>
+        <h3 class="mt-3">No Recurring Transactions Yet</h3>
+        <p class="text-muted">Set up subscriptions, salaries, or rent to automate your entries.</p>
+        <button class="btn btn-outline-primary mt-2" @onclick="() => OpenModal()">Create One Now</button>
+    </div>
+}
+else
+{
+    <div class="glass-card p-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Date Due</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Frequency</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rt in _recurringList)
+                    {
+                        var isExpense = rt.Type == TransactionType.Expense;
+                        var isTransfer = rt.Type == TransactionType.Transfer;
+                        var amountClass = isExpense ? "expense" : (isTransfer ? "text-muted" : "income");
+                        var prefix = isExpense ? "-" : (isTransfer ? "" : "+");
+
+                        <tr>
+                            <td>
+                                <div class="fw-bold">@rt.NextDueDate.ToString("MMM dd, yyyy")</div>
+                                <small class="text-muted">
+                                    @if (rt.NextDueDate.Date == DateTime.Today)
+                                    {
+                                        <span class="badge bg-warning text-dark">Today</span>
+                                    }
+                                    else if (rt.NextDueDate.Date < DateTime.Today)
+                                    {
+                                        <span class="badge bg-danger">Overdue</span>
+                                    }
+                                    else
+                                    {
+                                        <span>in @(Math.Ceiling((rt.NextDueDate.Date - DateTime.Today).TotalDays)) days</span>
+                                    }
+                                </small>
+                            </td>
+                            <td>
+                                <div class="fw-bold">@rt.Description</div>
+                                <div class="small text-muted">From: @rt.Account?.Name</div>
+                                @if (isTransfer)
+                                {
+                                    <div class="small text-muted">To: @rt.ToAccount?.Name</div>
+                                }
+                            </td>
+                            <td>
+                                @if (rt.Category != null)
+                                {
+                                    <span class="badge border" style="background-color: var(--bg-main); color: var(--text-main); border-color: @rt.Category.Color !important;">
+                                        @rt.Category.Icon @rt.Category.Name
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">@rt.Frequency</span>
+                            </td>
+                            <td class="text-end fw-bold amount @amountClass">
+                                @prefix₹@rt.Amount.ToString("N0")
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRecurring(rt.Id)" title="Delete">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<!-- Add/Edit Modal -->
+@if (_showModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_isEditing ? "Edit" : "New") Recurring Transaction</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => _showModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_model" OnValidSubmit="SaveRecurring">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger small mb-3" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <InputSelect @bind-Value="_model.Type" class="form-select">
+                                <option value="@TransactionType.Expense">Expense (e.g. Netflix, Rent)</option>
+                                <option value="@TransactionType.Income">Income (e.g. Salary)</option>
+                                <option value="@TransactionType.Transfer">Transfer (e.g. SIP)</option>
+                            </InputSelect>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Frequency</label>
+                                <InputSelect @bind-Value="_model.Frequency" class="form-select">
+                                    @foreach (var freq in Enum.GetValues<TransactionFrequency>())
+                                    {
+                                        <option value="@freq">@freq.ToString()</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Start Date</label>
+                                <InputDate @bind-Value="_model.StartDate" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <InputText @bind-Value="_model.Description" class="form-control" placeholder="e.g. Netflix Subscription" />
+                            <ValidationMessage For="() => _model.Description" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-border text-main">₹</span>
+                                <InputNumber @bind-Value="_model.Amount" class="form-control" />
+                            </div>
+                            <ValidationMessage For="() => _model.Amount" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">From Account</label>
+                            <InputSelect @bind-Value="_model.AccountId" class="form-select">
+                                <option value="0">-- Select Account --</option>
+                                @if (_accounts != null)
+                                {
+                                    @foreach (var acc in _accounts)
+                                    {
+                                        <option value="@acc.Id">@acc.Icon @acc.Name</option>
+                                    }
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="() => _model.AccountId" class="text-danger small" />
+                        </div>
+
+                        @if (_model.Type == TransactionType.Transfer)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">To Account</label>
+                                <InputSelect @bind-Value="_model.ToAccountId" class="form-select">
+                                    <option value="">-- Select Destination --</option>
+                                    @if (_accounts != null)
+                                    {
+                                        @foreach (var acc in _accounts)
+                                        {
+                                            if (acc.Id != _model.AccountId)
+                                            {
+                                                <option value="@acc.Id">@acc.Icon @acc.Name</option>
+                                            }
+                                        }
+                                    }
+                                </InputSelect>
+                            </div>
+                        }
+
+                        @if (_model.Type != TransactionType.Transfer)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Category</label>
+                                <InputSelect @bind-Value="_model.CategoryId" class="form-select">
+                                    <option value="">-- Select Category --</option>
+                                    @if (_categories != null)
+                                    {
+                                        @foreach (var cat in _categories)
+                                        {
+                                            <option value="@cat.Id">@cat.Icon @cat.Name</option>
+                                        }
+                                    }
+                                </InputSelect>
+                            </div>
+                        }
+
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn-primary w-100">Save</button>
+                            <button type="button" class="btn btn-outline-secondary w-100" @onclick="() => _showModal = false">Cancel</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<RecurringTransaction>? _recurringList;
+    private List<Account>? _accounts;
+    private List<Category>? _categories;
+
+    private bool _showModal;
+    private bool _isEditing;
+    private RecurringTransaction _model = new();
+    
+    private decimal _totalMonthlyExpenses = 0;
+    private decimal _totalMonthlyIncome = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _accounts = await FinanceService.GetAccountsAsync();
+        _categories = await FinanceService.GetCategoriesAsync();
+        _recurringList = await FinanceService.GetRecurringTransactionsAsync();
+        
+        CalculateStats();
+    }
+
+    private void CalculateStats()
+    {
+        if (_recurringList == null) return;
+        
+        _totalMonthlyExpenses = 0;
+        _totalMonthlyIncome = 0;
+        
+        foreach (var rt in _recurringList)
+        {
+            // Normalize to monthly cost equivalent for the header stats
+            decimal monthlyMultiplier = rt.Frequency switch
+            {
+                TransactionFrequency.Daily => 30,
+                TransactionFrequency.Weekly => 4.33m,
+                TransactionFrequency.Monthly => 1,
+                TransactionFrequency.Yearly => 1m / 12m,
+                _ => 1
+            };
+            
+            if (rt.Type == TransactionType.Expense)
+                _totalMonthlyExpenses += rt.Amount * monthlyMultiplier;
+            else if (rt.Type == TransactionType.Income)
+                _totalMonthlyIncome += rt.Amount * monthlyMultiplier;
+        }
+        
+        // Round to nearest whole number for display
+        _totalMonthlyExpenses = Math.Round(_totalMonthlyExpenses);
+        _totalMonthlyIncome = Math.Round(_totalMonthlyIncome);
+    }
+
+    private void OpenModal(RecurringTransaction? item = null)
+    {
+        if (item == null)
+        {
+            _model = new RecurringTransaction
+            {
+                StartDate = DateTime.Today,
+                Frequency = TransactionFrequency.Monthly,
+                Type = TransactionType.Expense,
+                AccountId = _accounts?.FirstOrDefault()?.Id ?? 0
+            };
+            _isEditing = false;
+        }
+        else
+        {
+            // Deep copy to avoid editing the list directly until saved
+            _model = new RecurringTransaction
+            {
+                Id = item.Id,
+                Description = item.Description,
+                Amount = item.Amount,
+                Type = item.Type,
+                Frequency = item.Frequency,
+                StartDate = item.StartDate,
+                NextDueDate = item.NextDueDate,
+                CategoryId = item.CategoryId,
+                AccountId = item.AccountId,
+                ToAccountId = item.ToAccountId
+            };
+            _isEditing = true;
+        }
+        _showModal = true;
+    }
+
+    private async Task SaveRecurring()
+    {
+        if (_model.AccountId == 0) return; // Basic validation
+
+        if (_isEditing)
+        {
+            await FinanceService.UpdateRecurringTransactionAsync(_model);
+        }
+        else
+        {
+            // If you change the logic for a new task start date, next due date aligns
+            _model.NextDueDate = _model.StartDate;
+            await FinanceService.AddRecurringTransactionAsync(_model);
+        }
+
+        _showModal = false;
+        await LoadDataAsync();
+    }
+
+    private async Task DeleteRecurring(int id)
+    {
+        await FinanceService.DeleteRecurringTransactionAsync(id);
+        await LoadDataAsync();
+    }
+}

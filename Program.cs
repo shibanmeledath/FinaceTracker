@@ -37,6 +37,9 @@ builder.Services.AddScoped<FinanceService>();
 builder.Services.AddScoped<ThemeService>();
 builder.Services.AddScoped<AiInsightService>();
 
+// Add Background Services
+builder.Services.AddHostedService<RecurringTransactionWorker>();
+
 var app = builder.Build();
 
 // 💡 Automatic Migration: Ensures schema is created on Render
