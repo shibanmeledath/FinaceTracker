@@ -60,8 +60,8 @@
                             <ValidationMessage For="() => NewCategory.Icon" class="text-danger small" />
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Color (Hex)</label>
-                            <InputText @bind-Value="NewCategory.Color" class="form-control" placeholder="#RRGGBB" />
+                            <label class="form-label">Color</label>
+                            <InputText type="color" @bind-Value="NewCategory.Color" class="form-control form-control-color w-100" style="height: 50px; cursor: pointer;" />
                             <ValidationMessage For="() => NewCategory.Color" class="text-danger small" />
                         </div>
                         <button type="submit" class="btn-primary w-100">Save Category</button>
