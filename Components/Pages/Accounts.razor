@@ -29,7 +29,33 @@ else
                             <h4 class="mb-0">@account.Name</h4>
                         </div>
                     </div>
-                    <div class="stat-value mb-2">₹@Balances[account.Id]</div>
+                    @if (account.IsCreditCard)
+                    {
+                        var utilized = Math.Abs(Balances[account.Id] < 0 ? Balances[account.Id] : (account.InitialBalance - Balances[account.Id]));
+                        // Calculate available credit based on current balance
+                        var available = account.CreditLimit + Balances[account.Id]; 
+                        var progress = account.CreditLimit > 0 ? (utilized / account.CreditLimit) * 100 : 0;
+                        
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span>Utilized: ₹@utilized.ToString("N2")</span>
+                                <span>Avail: ₹@available.ToString("N2")</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-danger" role="progressbar" style="width: @progress%"></div>
+                            </div>
+                            @if (account.StatementDay.HasValue)
+                            {
+                                <div class="small text-muted mt-2">
+                                    <i class="bi bi-calendar-event"></i> Bill on @account.StatementDay@GetDaySuffix(account.StatementDay.Value)
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="stat-value mb-2">₹@Balances[account.Id]</div>
+                    }
                     
                     <button class="btn btn-outline-danger btn-sm position-absolute top-0 end-0 m-3" 
                             @onclick="() => DeleteAccount(account.Id)">Delete</button>
@@ -77,6 +103,27 @@ else
                             <InputNumber @bind-Value="NewAccount.InitialBalance" class="form-control" />
                         </div>
 
+                        <div class="mb-3 form-check">
+                            <InputCheckbox @bind-Value="NewAccount.IsCreditCard" class="form-check-input" id="isCreditCard" />
+                            <label class="form-check-label" for="isCreditCard">Is Credit Card?</label>
+                        </div>
+                        
+                        @if (NewAccount.IsCreditCard)
+                        {
+                            <div class="p-3 mb-3 border rounded border-border" style="background: var(--bg-body)">
+                                <h6>Credit Card Details</h6>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Credit Limit (₹)</label>
+                                    <InputNumber @bind-Value="NewAccount.CreditLimit" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Statement Day (1-31)</label>
+                                    <InputNumber @bind-Value="NewAccount.StatementDay" class="form-control" min="1" max="31" />
+                                </div>
+                            </div>
+                        }
+
                         <button type="submit" class="btn-primary w-100">Save Account</button>
                     </EditForm>
                 </div>
@@ -118,6 +165,18 @@ else
     {
         await FinanceService.DeleteAccountAsync(id);
         await LoadData();
+    }
+
+    private string GetDaySuffix(int day)
+    {
+        if (day >= 11 && day <= 13) return "th";
+        return (day % 10) switch
+        {
+            1 => "st",
+            2 => "nd",
+            3 => "rd",
+            _ => "th"
+        };
     }
 }
 
