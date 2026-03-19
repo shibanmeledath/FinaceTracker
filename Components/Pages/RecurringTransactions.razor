@@ -104,7 +104,7 @@ else
                                 <span class="badge bg-secondary">@rt.Frequency</span>
                             </td>
                             <td class="text-end fw-bold amount @amountClass">
-                                @prefix₹@rt.Amount.ToString("N0")
+                                @prefix₹@rt.Amount
                             </td>
                             <td class="text-center">
                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRecurring(rt.Id)" title="Delete">
@@ -170,7 +170,7 @@ else
                             <label class="form-label">Amount</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-transparent border-border text-main">₹</span>
-                                <InputNumber @bind-Value="_model.Amount" class="form-control" />
+                                <InputNumber @bind-Value="_model.Amount" class="form-control" step="0.01" />
                             </div>
                             <ValidationMessage For="() => _model.Amount" class="text-danger small" />
                         </div>
@@ -289,9 +289,9 @@ else
                 _totalMonthlyIncome += rt.Amount * monthlyMultiplier;
         }
         
-        // Round to nearest whole number for display
-        _totalMonthlyExpenses = Math.Round(_totalMonthlyExpenses);
-        _totalMonthlyIncome = Math.Round(_totalMonthlyIncome);
+        // Round to 2 decimal places for display
+        _totalMonthlyExpenses = Math.Round(_totalMonthlyExpenses, 2);
+        _totalMonthlyIncome = Math.Round(_totalMonthlyIncome, 2);
     }
 
     private void OpenModal(RecurringTransaction? item = null)
