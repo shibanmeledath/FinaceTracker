@@ -3,6 +3,7 @@ using System;
 using FinanceTracker.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FinanceTracker.Migrations
 {
     [DbContext(typeof(FinanceDbContext))]
-    partial class FinanceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260319114818_AddCreditCardProperties")]
+    partial class AddCreditCardProperties
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,6 +32,9 @@ namespace FinanceTracker.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("AutoStashEnabled")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Color")
                         .IsRequired()
@@ -54,6 +60,12 @@ namespace FinanceTracker.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<int?>("StashDestinationAccountId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("StashSourceAccountId")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("StatementDay")
                         .HasColumnType("integer");
 
@@ -65,6 +77,7 @@ namespace FinanceTracker.Migrations
                         new
                         {
                             Id = 1,
+                            AutoStashEnabled = false,
                             Color = "#4A90E2",
                             CreditLimit = 0m,
                             Icon = "🏦",
@@ -75,6 +88,7 @@ namespace FinanceTracker.Migrations
                         new
                         {
                             Id = 2,
+                            AutoStashEnabled = false,
                             Color = "#50E3C2",
                             CreditLimit = 0m,
                             Icon = "💰",
@@ -85,6 +99,7 @@ namespace FinanceTracker.Migrations
                         new
                         {
                             Id = 3,
+                            AutoStashEnabled = false,
                             Color = "#D0021B",
                             CreditLimit = 0m,
                             Icon = "💳",
@@ -95,6 +110,7 @@ namespace FinanceTracker.Migrations
                         new
                         {
                             Id = 4,
+                            AutoStashEnabled = false,
                             Color = "#3b82f6",
                             CreditLimit = 0m,
                             Icon = "💰",

@@ -20,5 +20,9 @@ public class Account
 
     public decimal InitialBalance { get; set; }
 
+    public bool IsCreditCard { get; set; }
+    public decimal CreditLimit { get; set; }
+    public int? StatementDay { get; set; }
+
     public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
 }
